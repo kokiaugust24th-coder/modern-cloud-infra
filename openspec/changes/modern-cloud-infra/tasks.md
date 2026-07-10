@@ -29,4 +29,11 @@
 - [x] 4.5 週次 `pg_dump` → Cloudflare R2 + リストア検証の GitHub Actions を構築（`.github/workflows/backup.yml`）
 - [x] 4.6 ローカルで npm install / lint / typecheck / test / build を実行し green を確認。esbuild の中程度脆弱性を検出し Vite 6 / Vitest 3 へ更新して解消（`npm audit` 0 件）
 - [x] 4.7 Docker Desktop 起動後に `docker build ./app` でコンテナビルドを実機検証。`docker run` で起動し HTTP 200 応答を確認済み
-- [ ] 4.8 アカウント作成・API トークン発行等の手動手順（`docs/phase0-setup.md` 参照）をユーザー自身が実施し、Terraform apply・`supabase db push`・GitHub Secrets 登録を完了する
+- [x] 4.8a GitHub リポジトリ作成 + push（`gh repo create --public --source=. --push`）。公開先: https://github.com/kokiaugust24th-coder/modern-cloud-infra
+- [x] 4.8b Cloudflare アカウントへログイン済み（Koki.august24th@gmail.com、account_id: 3250126a91bc7330b3e2b85f53822f44 を確認）
+- [x] 4.8c Cloudflare API トークン発行(Pages:Edit)完了。ユーザー本人が発行し `terraform.tfvars` に設定
+- [x] 4.8d Supabase プロジェクト作成を MCP(`mcp__supabase__create_project`)経由で自動化。プロジェクト `modern-cloud-infra-phase0`(ref: zljeygbpnwxmjcgwfjla、リージョン ap-northeast-1、コスト $0/月)を作成。URL・publishable key は `app/.env` に反映済み(公開用キーのため代行設定可)
+- [ ] 4.8e Cloudflare R2 バケット作成 + API トークン発行
+- [ ] 4.8f GitHub Secrets 登録（`SUPABASE_DB_URL` 等、docs/phase0-setup.md の一覧）
+- [x] 4.8g `terraform apply` 完了。Cloudflare Pages プロジェクト作成(GitHub App 連携をユーザー本人が承認後、Terraform で作成)。初回デプロイを手動トリガーし HTTP 200 で稼働確認済み。公開URL: https://modern-cloud-infra-phase0.pages.dev
+- [x] 4.8h マイグレーション適用を MCP(`mcp__supabase__apply_migration`)経由で自動化。`profiles` テーブル + RLS ポリシー作成済み（`supabase/migrations/0001_init.sql` と同一内容）
