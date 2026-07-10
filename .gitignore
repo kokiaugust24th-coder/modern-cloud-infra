@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.env
+.env.local
+*.tfstate
+*.tfstate.*
+.terraform/
+terraform.tfvars
+*.dump
+.claude/settings.local.json

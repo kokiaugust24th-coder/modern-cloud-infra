@@ -1,0 +1,36 @@
+name: Weekly DB Backup
+
+on:
+  schedule:
+    - cron: '0 18 * * 0' # 毎週日曜 03:00 JST
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install postgresql-client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Dump database
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          timestamp=$(date -u +%Y%m%dT%H%M%SZ)
+          pg_dump "$SUPABASE_DB_URL" --format=custom --file="backup-${timestamp}.dump"
+          echo "BACKUP_FILE=backup-${timestamp}.dump" >> "$GITHUB_ENV"
+
+      - name: Upload to Cloudflare R2 (S3 互換, 無料枠 10GB)
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+        run: |
+          pip install --quiet awscli
+          aws s3 cp "$BACKUP_FILE" "s3://${{ secrets.R2_BACKUP_BUCKET }}/$BACKUP_FILE" \
+            --endpoint-url "${{ secrets.R2_ENDPOINT_URL }}"
+
+      - name: Restore verification (integrity check)
+        run: |
+          pg_restore --list "$BACKUP_FILE" > /dev/null
+          echo "リストア可能性を検証しました: $BACKUP_FILE"

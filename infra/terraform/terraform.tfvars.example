@@ -1,0 +1,4 @@
+cloudflare_api_token  = "changeme"
+cloudflare_account_id = "changeme"
+github_owner          = "your-github-username"
+github_repo_name      = "your-repo-name"
