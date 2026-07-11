@@ -16,11 +16,14 @@ jobs:
           sudo sh -c 'echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(. /etc/os-release && echo $VERSION_CODENAME)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
           sudo apt-get update
           sudo apt-get install -y postgresql-client-17
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
 
       - name: Dump database
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
+          which pg_dump
+          pg_dump --version
           timestamp=$(date -u +%Y%m%dT%H%M%SZ)
           pg_dump "$SUPABASE_DB_URL" --format=custom --file="backup-${timestamp}.dump"
           echo "BACKUP_FILE=backup-${timestamp}.dump" >> "$GITHUB_ENV"
