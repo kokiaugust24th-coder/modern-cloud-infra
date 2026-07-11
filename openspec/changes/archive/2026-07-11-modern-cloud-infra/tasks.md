@@ -16,8 +16,8 @@
 
 ## 3. 仕様の確定と展開
 
-- [ ] 3.1 プロポーザル・デザイン・スペック全体の最終レビューを行い、承認を得る
-- [ ] 3.2 delta スペックをメインスペック（openspec/specs/）へ同期する
+- [x] 3.1 プロポーザル・デザイン・スペック全体の最終レビューを行い、承認を得る（`openspec validate --strict` 通過、ユーザー承認のうえ archive 実施）
+- [x] 3.2 delta スペックをメインスペック（openspec/specs/）へ同期する（`openspec archive` により9ケーパビリティ登録完了）
 - [x] 3.3 後続の実装変更をフェーズ順に分割して起票する（フェーズ0: Cloudflare Pages+Supabase セットアップ + workload-portability / cost-management 適用 → フェーズ1: バックエンドの AWS 移行・認証は A 案残留・CI に kind マニフェスト検証を追加 → フェーズ2: EKS フル構成）
 
 ## 4. フェーズ0 実装（自動構築、2026-07-11）
