@@ -4,10 +4,6 @@ on:
   schedule:
     - cron: '0 18 * * 0' # 毎週日曜 03:00 JST
   workflow_dispatch:
-  push:
-    branches: [master]
-    paths:
-      - '.github/workflows/backup.yml'
 
 jobs:
   backup:

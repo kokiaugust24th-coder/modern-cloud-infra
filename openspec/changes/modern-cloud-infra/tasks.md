@@ -33,7 +33,8 @@
 - [x] 4.8b Cloudflare アカウントへログイン済み（Koki.august24th@gmail.com、account_id: 3250126a91bc7330b3e2b85f53822f44 を確認）
 - [x] 4.8c Cloudflare API トークン発行(Pages:Edit)完了。ユーザー本人が発行し `terraform.tfvars` に設定
 - [x] 4.8d Supabase プロジェクト作成を MCP(`mcp__supabase__create_project`)経由で自動化。プロジェクト `modern-cloud-infra-phase0`(ref: zljeygbpnwxmjcgwfjla、リージョン ap-northeast-1、コスト $0/月)を作成。URL・publishable key は `app/.env` に反映済み(公開用キーのため代行設定可)
-- [ ] 4.8e Cloudflare R2 バケット作成 + API トークン発行
-- [ ] 4.8f GitHub Secrets 登録（`SUPABASE_DB_URL` 等、docs/phase0-setup.md の一覧）
+- [x] 4.8e Cloudflare R2 有効化(ユーザー本人が課金同意) + バケット `modern-cloud-infra-backups` 作成 + APIトークン発行(ユーザー本人)
+- [x] 4.8f GitHub Secrets 登録完了(R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY / SUPABASE_DB_URL / R2_BACKUP_BUCKET / R2_ENDPOINT_URL)。CI の push トリガーが `main` のままで発火していなかったバグと `terraform fmt` 崩れを修正し、CI 全ジョブ green を確認
+- [ ] 4.8i SUPABASE_DB_URL の値が不正(pg_dump がソケット接続を試み失敗)。ユーザーが Supabase の正しい接続文字列で再登録し、Weekly DB Backup workflow の成功を再確認する
 - [x] 4.8g `terraform apply` 完了。Cloudflare Pages プロジェクト作成(GitHub App 連携をユーザー本人が承認後、Terraform で作成)。初回デプロイを手動トリガーし HTTP 200 で稼働確認済み。公開URL: https://modern-cloud-infra-phase0.pages.dev
 - [x] 4.8h マイグレーション適用を MCP(`mcp__supabase__apply_migration`)経由で自動化。`profiles` テーブル + RLS ポリシー作成済み（`supabase/migrations/0001_init.sql` と同一内容）
