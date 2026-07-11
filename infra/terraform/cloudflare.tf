@@ -24,4 +24,21 @@ resource "cloudflare_pages_project" "app" {
     destination_dir = "dist"
     root_dir        = "app"
   }
+
+  # Supabase の URL / publishable key はフロントエンドに埋め込まれる公開用の値であり
+  # 秘密情報ではない(データ保護は RLS が担う)。ビルド時環境変数として設定する。
+  deployment_configs {
+    production {
+      environment_variables = {
+        VITE_SUPABASE_URL      = var.supabase_url
+        VITE_SUPABASE_ANON_KEY = var.supabase_anon_key
+      }
+    }
+    preview {
+      environment_variables = {
+        VITE_SUPABASE_URL      = var.supabase_url
+        VITE_SUPABASE_ANON_KEY = var.supabase_anon_key
+      }
+    }
+  }
 }

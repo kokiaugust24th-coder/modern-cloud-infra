@@ -30,3 +30,13 @@ variable "production_branch" {
   type        = string
   default     = "main"
 }
+
+variable "supabase_url" {
+  description = "Supabase プロジェクトの URL(公開情報)"
+  type        = string
+}
+
+variable "supabase_anon_key" {
+  description = "Supabase の publishable/anon key(公開埋め込み前提の値。秘密情報ではない)"
+  type        = string
+}
