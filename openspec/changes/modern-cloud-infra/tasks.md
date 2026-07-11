@@ -35,6 +35,13 @@
 - [x] 4.8d Supabase プロジェクト作成を MCP(`mcp__supabase__create_project`)経由で自動化。プロジェクト `modern-cloud-infra-phase0`(ref: zljeygbpnwxmjcgwfjla、リージョン ap-northeast-1、コスト $0/月)を作成。URL・publishable key は `app/.env` に反映済み(公開用キーのため代行設定可)
 - [x] 4.8e Cloudflare R2 有効化(ユーザー本人が課金同意) + バケット `modern-cloud-infra-backups` 作成 + APIトークン発行(ユーザー本人)
 - [x] 4.8f GitHub Secrets 登録完了(R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY / SUPABASE_DB_URL / R2_BACKUP_BUCKET / R2_ENDPOINT_URL)。CI の push トリガーが `main` のままで発火していなかったバグと `terraform fmt` 崩れを修正し、CI 全ジョブ green を確認
-- [ ] 4.8i SUPABASE_DB_URL の値が不正(pg_dump がソケット接続を試み失敗)。ユーザーが Supabase の正しい接続文字列で再登録し、Weekly DB Backup workflow の成功を再確認する
+- [x] 4.8i SUPABASE_DB_URL を Session pooler(IPv4対応、ポート5432)の正しい接続文字列で再登録。あわせて pg_dump のサーバー/クライアントバージョン不一致(17 vs 16)を PGDG リポジトリ導入 + PATH 修正で解消し、Weekly DB Backup workflow が全ステップ成功(R2へ278.2KiBのダンプをアップロード、リストア検証も成功)することを確認
 - [x] 4.8g `terraform apply` 完了。Cloudflare Pages プロジェクト作成(GitHub App 連携をユーザー本人が承認後、Terraform で作成)。初回デプロイを手動トリガーし HTTP 200 で稼働確認済み。公開URL: https://modern-cloud-infra-phase0.pages.dev
 - [x] 4.8h マイグレーション適用を MCP(`mcp__supabase__apply_migration`)経由で自動化。`profiles` テーブル + RLS ポリシー作成済み（`supabase/migrations/0001_init.sql` と同一内容）
+
+## 5. フェーズ0 完了確認
+
+- [x] 5.1 CI(lint/typecheck/test/build/コンテナビルド検証/シークレットスキャン/terraform validate)全ジョブ green
+- [x] 5.2 Weekly DB Backup workflow(pg_dump → R2アップロード → リストア検証)全ステップ green
+- [x] 5.3 Cloudflare Pages 本番稼働確認(HTTP 200、`https://modern-cloud-infra-phase0.pages.dev`)
+- [x] 5.4 Supabase プロジェクト稼働確認(`profiles` テーブル・RLS 適用済み)
