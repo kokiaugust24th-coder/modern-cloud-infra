@@ -42,4 +42,28 @@ describe("GhPublishRepoClient.createPullRequest", () => {
     expect(calls[configNameIndex][1]).not.toContain("--global");
     expect(calls[configEmailIndex][1]).not.toContain("--global");
   });
+
+  it("authenticates the plain `git push` with the PAT via a local extraheader (gh's own auth does not carry over)", async () => {
+    const client = new GhPublishRepoClient({ repo: "x/devblog", token: "test-token" });
+
+    await client.createPullRequest({
+      branch: "devblog/2026-07-05--2026-07-12",
+      files: [{ relativePath: "articles/a.md", content: "本文" }],
+      commitMessage: "devblog: 記事",
+      prTitle: "title",
+      prBody: "body",
+    });
+
+    const calls = mockedExecFileSync.mock.calls.map(([cmd, args]) => [cmd, args] as [string, string[]]);
+
+    const extraheaderIndex = calls.findIndex(
+      ([cmd, args]) => cmd === "git" && args[0] === "config" && args[2] === "http.https://github.com/.extraheader"
+    );
+    const pushIndex = calls.findIndex(([cmd, args]) => cmd === "git" && args[0] === "push");
+
+    expect(extraheaderIndex).toBeGreaterThanOrEqual(0);
+    expect(calls[extraheaderIndex][1]).toContain("--local");
+    expect(calls[extraheaderIndex][1][3]).toContain("test-token");
+    expect(pushIndex).toBeGreaterThan(extraheaderIndex);
+  });
 });

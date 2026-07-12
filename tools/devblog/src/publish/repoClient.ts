@@ -63,6 +63,14 @@ export class GhPublishRepoClient implements PublishRepoClient {
       // the caller's environment.
       execFileSync("git", ["config", "user.name", "devblog-bot"], { cwd: workDir, encoding: "utf-8" });
       execFileSync("git", ["config", "user.email", "devblog-bot@users.noreply.github.com"], { cwd: workDir, encoding: "utf-8" });
+      // `gh repo clone` authenticates its own request with GH_TOKEN but does not
+      // leave the clone able to authenticate a plain `git push`. Same technique
+      // actions/checkout uses: a local (non-global) extraheader carrying the PAT.
+      execFileSync(
+        "git",
+        ["config", "--local", "http.https://github.com/.extraheader", `AUTHORIZATION: bearer ${this.options.token}`],
+        { cwd: workDir, encoding: "utf-8" }
+      );
       execFileSync("git", ["checkout", "-b", params.branch], { cwd: workDir, encoding: "utf-8" });
 
       for (const file of params.files) {
