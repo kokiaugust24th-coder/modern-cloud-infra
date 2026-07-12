@@ -1,0 +1,48 @@
+name: Devblog Pipeline
+
+on:
+  schedule:
+    - cron: '0 22 * * 0' # 毎週月曜 07:00 JST
+  workflow_dispatch:
+    inputs:
+      since:
+        description: '収集対象期間の開始 (ISO 日時、省略可)'
+        required: false
+      until:
+        description: '収集対象期間の終了 (ISO 日時、省略可)'
+        required: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tools/devblog
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: tools/devblog/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Run devblog pipeline (collect -> generate -> scan -> publish)
+        env:
+          DEVBLOG_LLM_API_KEY: ${{ secrets.DEVBLOG_LLM_API_KEY }}
+          DEVBLOG_PUBLISH_REPO: ${{ secrets.DEVBLOG_PUBLISH_REPO }}
+          DEVBLOG_PUBLISH_REPO_TOKEN: ${{ secrets.DEVBLOG_PUBLISH_REPO_TOKEN }}
+        run: |
+          ARGS=""
+          if [ -n "${{ github.event.inputs.since }}" ]; then ARGS="$ARGS --since ${{ github.event.inputs.since }}"; fi
+          if [ -n "${{ github.event.inputs.until }}" ]; then ARGS="$ARGS --until ${{ github.event.inputs.until }}"; fi
+          npx tsx src/cli.ts run $ARGS

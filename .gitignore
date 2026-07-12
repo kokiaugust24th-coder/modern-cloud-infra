@@ -8,3 +8,4 @@ dist/
 terraform.tfvars
 *.dump
 .claude/settings.local.json
+.devblog/
