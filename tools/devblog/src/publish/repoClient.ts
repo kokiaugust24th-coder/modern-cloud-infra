@@ -66,9 +66,13 @@ export class GhPublishRepoClient implements PublishRepoClient {
       // `gh repo clone` authenticates its own request with GH_TOKEN but does not
       // leave the clone able to authenticate a plain `git push`. Same technique
       // actions/checkout uses: a local (non-global) extraheader carrying the PAT.
+      // GitHub's git-http-backend expects HTTP Basic (not Bearer) — the PAT as
+      // the username with an empty password, exactly as `git clone
+      // https://<token>@github.com/...` would send it.
+      const basicAuth = Buffer.from(`x-access-token:${this.options.token}`).toString("base64");
       execFileSync(
         "git",
-        ["config", "--local", "http.https://github.com/.extraheader", `AUTHORIZATION: bearer ${this.options.token}`],
+        ["config", "--local", "http.https://github.com/.extraheader", `AUTHORIZATION: basic ${basicAuth}`],
         { cwd: workDir, encoding: "utf-8" }
       );
       execFileSync("git", ["checkout", "-b", params.branch], { cwd: workDir, encoding: "utf-8" });

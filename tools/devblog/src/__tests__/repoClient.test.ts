@@ -63,7 +63,13 @@ describe("GhPublishRepoClient.createPullRequest", () => {
 
     expect(extraheaderIndex).toBeGreaterThanOrEqual(0);
     expect(calls[extraheaderIndex][1]).toContain("--local");
-    expect(calls[extraheaderIndex][1][3]).toContain("test-token");
+    // GitHub's git-http-backend expects HTTP Basic auth, not Bearer — a raw
+    // "bearer <token>" header is silently rejected ("could not read
+    // Username"), which is exactly the bug this test guards against.
+    const headerValue = calls[extraheaderIndex][1][3];
+    expect(headerValue).toMatch(/^AUTHORIZATION: basic /);
+    const decoded = Buffer.from(headerValue.replace("AUTHORIZATION: basic ", ""), "base64").toString("utf-8");
+    expect(decoded).toBe("x-access-token:test-token");
     expect(pushIndex).toBeGreaterThan(extraheaderIndex);
   });
 });
