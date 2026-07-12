@@ -52,6 +52,22 @@ describe("OpenAiCompatibleLlmClient", () => {
       { role: "system", content: "sys" },
       { role: "user", content: "user prompt" },
     ]);
+    // Reasoning models (e.g. GLM-5.2) must not spend max_tokens on chain-of-thought.
+    expect(body.thinking).toEqual({ type: "disabled" });
+  });
+
+  it("treats an empty completion as a retryable failure instead of returning blank text", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: "" } }], usage: { prompt_tokens: 10, completion_tokens: 0 } }),
+    });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    const client = new OpenAiCompatibleLlmClient("test-key", makeConfig({ maxRetries: 1, baseBackoffMs: 1 }));
+
+    const error = await client.complete({ system: "s", prompt: "p", maxTokens: 10 }).catch((e) => e);
+    expect((error as { cause?: Error }).cause?.message).toMatch(/empty completion/);
+    expect(fetchMock).toHaveBeenCalledTimes(2); // initial + 1 retry
   });
 
   it("retries on failure and eventually throws after exhausting retries", async () => {

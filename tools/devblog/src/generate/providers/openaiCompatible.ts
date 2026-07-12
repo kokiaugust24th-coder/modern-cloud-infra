@@ -37,6 +37,11 @@ export class OpenAiCompatibleLlmClient implements LlmClient {
               { role: "system", content: params.system },
               { role: "user", content: params.prompt },
             ],
+            // GLM-5.2 (and other reasoning models served behind this endpoint
+            // shape) default to emitting chain-of-thought, which can consume
+            // the entire max_tokens budget and leave `content` empty. This
+            // field is a harmless no-op for providers that don't recognize it.
+            thinking: { type: "disabled" },
           }),
           signal: controller.signal,
         });
@@ -47,6 +52,10 @@ export class OpenAiCompatibleLlmClient implements LlmClient {
 
         const data = (await response.json()) as ChatCompletionResponse;
         const text = data.choices[0]?.message?.content ?? "";
+
+        if (!text.trim()) {
+          throw new Error(`LLM API returned an empty completion: ${JSON.stringify(data).slice(0, 500)}`);
+        }
 
         return {
           text,
