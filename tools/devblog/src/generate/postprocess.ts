@@ -60,6 +60,18 @@ export function simplifyWoOkonauExpressions(body: string): string {
   return body.replace(WO_OKONAU_PATTERN, (_match, noun: string, conjugation: string) => `${noun}${WO_OKONAU_CONJUGATIONS[conjugation]}`);
 }
 
+/**
+ * Removes the machine-generated attribution/license footer if present.
+ * Used by the lint-guided repair pass: the model sees the full body (so lint
+ * line numbers line up) and may echo the footer back, but the footer must
+ * always be re-appended deterministically, never trusted from model output.
+ */
+export function stripSourceAttribution(body: string): string {
+  const index = body.lastIndexOf("## 情報源");
+  if (index === -1) return body;
+  return `${body.slice(0, index).trimEnd()}\n`;
+}
+
 const KANJI_COUNTER_PATTERN = /([一二三四五六七八九])つ/g;
 
 const KANJI_DIGITS: Record<string, string> = {

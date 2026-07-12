@@ -173,6 +173,46 @@ describe("runGenerate", () => {
     expect(resumingLlm.calls).toBe(2);
   });
 
+  it("runs a lint-guided repair pass when the critique output fails the linter", async () => {
+    const config = makeConfig(root);
+    // One 100+ character sentence — trips textlint's sentence-length rule.
+    const LINT_FAILING_DRAFT = ["## 機能Xの追加", "", `${"この機能はとても長い説明で、".repeat(12)}終わります。`].join("\n");
+    const llm = new ScriptedLlmClient([
+      textResult(VALID_OUTLINE),
+      textResult(LINT_FAILING_DRAFT), // draft
+      textResult(LINT_FAILING_DRAFT), // critique still bad
+      textResult(VALID_DRAFT), // repair pass 1 fixes it
+    ]);
+
+    const result = await runGenerate(config, makeDigest(), llm);
+
+    expect(result.lint?.passed).toBe(true);
+    expect(llm.calls).toBe(4); // outline + draft + critique + 1 repair
+    expect(result.metadata?.stages.repair?.passes).toBe(1);
+    // The machine-generated attribution footer survives the repair round-trip
+    // exactly once (not duplicated, not dropped).
+    const article = result.article as Article;
+    expect(article.body.match(/## 情報源/g)).toHaveLength(1);
+  });
+
+  it("gives up after the bounded number of repair passes and reports the lint failure", async () => {
+    const config = makeConfig(root);
+    const LINT_FAILING_DRAFT = ["## 機能Xの追加", "", `${"この機能はとても長い説明で、".repeat(12)}終わります。`].join("\n");
+    const llm = new ScriptedLlmClient([
+      textResult(VALID_OUTLINE),
+      textResult(LINT_FAILING_DRAFT),
+      textResult(LINT_FAILING_DRAFT),
+      textResult(LINT_FAILING_DRAFT), // repair 1 fails
+      textResult(LINT_FAILING_DRAFT), // repair 2 fails
+    ]);
+
+    const result = await runGenerate(config, makeDigest(), llm);
+
+    expect(result.lint?.passed).toBe(false);
+    expect(llm.calls).toBe(5); // outline + draft + critique + 2 repairs, then stop
+    expect(result.metadata?.stages.repair?.passes).toBe(2);
+  });
+
   it("propagates the error and writes no article file when the LLM call exhausts retries", async () => {
     const config = makeConfig(root);
     const llm = new ScriptedLlmClient([new Error("boom"), new Error("boom"), new Error("boom")]);

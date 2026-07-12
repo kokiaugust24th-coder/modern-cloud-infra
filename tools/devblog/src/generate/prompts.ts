@@ -1,4 +1,4 @@
-import type { Digest } from "../types.js";
+import type { Digest, LintIssue } from "../types.js";
 
 export interface TemplateAssets {
   articleTemplate: string;
@@ -140,6 +140,35 @@ export function buildCritiquePrompt(
     "## ダイジェスト(事実確認用)",
     renderDigestFacts(digest),
   ].join("\n");
+
+  return { system, prompt };
+}
+
+/**
+ * Lint-guided repair: instead of blindly regenerating (which failed the
+ * linter 9 times in a row on information-dense digests), feed the linter's
+ * actual findings back to the model so it fixes exactly the offending
+ * sentences and leaves everything else untouched.
+ */
+export function buildRepairPrompt(body: string, issues: LintIssue[]): { system: string; prompt: string } {
+  const system = [
+    "あなたは技術ブログ記事の校正者です。記事リンターが検出した違反箇所だけを修正してください。",
+    "",
+    "# 厳守事項",
+    "- 指摘された違反を全て解消すること。行番号は本文の行番号です",
+    "- 「一文が長すぎる」場合はその文を句点で2〜3文に分割する",
+    "- 「同じ助詞の重複」の場合は語順を変えるか文を分割する",
+    "- 「冗長な表現」の場合は指摘中の提案どおり簡潔な表現に置き換える",
+    "- 違反箇所以外の文章・見出し・mermaidブロック・リンクは一切変更しないこと",
+    "- 新しい事実・数値・実装を追加しないこと",
+    "- 出力は修正後の本文(Markdown)のみとし、説明文・前置きを含めないこと",
+  ].join("\n");
+
+  const issueLines = issues
+    .map((issue) => `- [${issue.rule}]${issue.line ? ` (${issue.line}行目)` : ""} ${issue.message}`)
+    .join("\n");
+
+  const prompt = ["## リンターの指摘", issueLines, "", "## 本文", body].join("\n");
 
   return { system, prompt };
 }

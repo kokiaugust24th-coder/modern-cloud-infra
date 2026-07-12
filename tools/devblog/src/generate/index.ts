@@ -9,10 +9,14 @@ import { runStages } from "./stages.js";
 import {
   appendSourceAttribution,
   stripLocalImageReferences,
+  stripSourceAttribution,
   simplifyWoOkonauExpressions,
   useArabicNumeralsForCounters,
 } from "./postprocess.js";
+import { buildRepairPrompt } from "./prompts.js";
 import { lintArticle } from "./linter.js";
+
+const REPAIR_MAX_TOKENS = 4000;
 
 export interface GenerateResult {
   /** null when the digest carried no activity — this is a normal, non-error outcome. */
@@ -48,10 +52,8 @@ export async function runGenerate(
     throw error instanceof Error ? error : new Error(String(error));
   }
 
-  let body = stripLocalImageReferences(finalBody);
-  body = simplifyWoOkonauExpressions(body);
-  body = useArabicNumeralsForCounters(body);
-  body = appendSourceAttribution(body, digest);
+  const postprocessCore = (text: string): string =>
+    useArabicNumeralsForCounters(simplifyWoOkonauExpressions(stripLocalImageReferences(text)));
 
   // The title comes straight from the LLM's outline-stage JSON and never
   // passes through the critique stage, so it needs the same deterministic
@@ -59,7 +61,7 @@ export async function runGenerate(
   // alone fails the linter (found via a real run: title contained "生成を行う").
   const title = useArabicNumeralsForCounters(simplifyWoOkonauExpressions(outline.title));
 
-  const article: Article = {
+  const composeArticle = (core: string): Article => ({
     frontmatter: {
       title,
       emoji: "📝",
@@ -71,11 +73,37 @@ export async function runGenerate(
       template_version: assets.templateVersion,
       rubric_version: assets.rubricVersion,
     },
-    body,
+    // The attribution/license footer is machine-generated and lint-clean, so
+    // it is re-appended deterministically after every repair pass rather than
+    // being exposed to the model for accidental edits.
+    body: appendSourceAttribution(core, digest),
     slug: stageDirName(digest),
-  };
+  });
 
-  const lint = await lintArticle(article, config.linter);
+  let bodyCore = postprocessCore(finalBody);
+  let article = composeArticle(bodyCore);
+  let lint = await lintArticle(article, config.linter);
+
+  // Lint-guided repair: blind regeneration failed the linter 9 runs in a row
+  // on information-dense digests, so instead feed the linter's own findings
+  // back to the model and have it fix exactly the flagged sentences.
+  const MAX_REPAIR_PASSES = 2;
+  for (let pass = 1; !lint.passed && pass <= MAX_REPAIR_PASSES; pass++) {
+    const { system, prompt } = buildRepairPrompt(article.body, lint.issues);
+    const result = await llm.complete({ system, prompt, maxTokens: REPAIR_MAX_TOKENS });
+
+    const repair = metadata.stages.repair ?? { inputTokens: 0, outputTokens: 0, passes: 0 };
+    repair.inputTokens += result.inputTokens;
+    repair.outputTokens += result.outputTokens;
+    repair.passes = pass;
+    metadata.stages.repair = repair;
+
+    // Strip the machine-generated footer if the model echoed it back, then
+    // re-apply the deterministic postprocessing to the repaired prose.
+    bodyCore = postprocessCore(stripSourceAttribution(result.text));
+    article = composeArticle(bodyCore);
+    lint = await lintArticle(article, config.linter);
+  }
 
   mkdirSync(config.draftsDir, { recursive: true });
   const draftPath = path.join(config.draftsDir, `${article.slug}.md`);

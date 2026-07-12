@@ -44,6 +44,8 @@ export interface GenerationMetadata {
     outline: { inputTokens: number; outputTokens: number };
     draft: { inputTokens: number; outputTokens: number };
     critique: { inputTokens: number; outputTokens: number };
+    /** Lint-guided repair passes (only present when the linter rejected the critique output). */
+    repair?: { inputTokens: number; outputTokens: number; passes: number };
   };
   templateVersion: string;
   rubricVersion: string;
