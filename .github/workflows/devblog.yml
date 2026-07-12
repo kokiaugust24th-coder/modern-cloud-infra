@@ -57,15 +57,19 @@ jobs:
           # produces different prose, so retrying is worthwhile. Any other
           # exit code (missing secret, auth failure, etc.) is a config/code
           # problem that won't be fixed by retrying, so fail immediately.
+          # NOTE: `status=$?` must be the line immediately after the command
+          # whose exit code we want — any command in between (even `echo`)
+          # overwrites `$?`, which previously caused this to always see 0
+          # and silently report success without ever creating a PR.
           MAX_ATTEMPTS=3
           for attempt in $(seq 1 "$MAX_ATTEMPTS"); do
             echo "::group::devblog run attempt $attempt/$MAX_ATTEMPTS"
-            if npx tsx src/cli.ts run $ARGS; then
-              echo "::endgroup::"
-              exit 0
-            fi
+            npx tsx src/cli.ts run $ARGS
             status=$?
             echo "::endgroup::"
+            if [ "$status" -eq 0 ]; then
+              exit 0
+            fi
             if [ "$status" -ne 3 ]; then
               echo "Non-retryable exit code $status; not retrying."
               exit "$status"
