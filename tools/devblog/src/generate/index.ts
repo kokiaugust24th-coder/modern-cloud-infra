@@ -6,7 +6,12 @@ import type { Article, Digest, GenerationMetadata, LintResult } from "../types.j
 import { loadTemplateAssets } from "./assets.js";
 import type { LlmClient } from "./llm.js";
 import { runStages } from "./stages.js";
-import { appendSourceAttribution, stripLocalImageReferences, simplifyWoOkonauExpressions } from "./postprocess.js";
+import {
+  appendSourceAttribution,
+  stripLocalImageReferences,
+  simplifyWoOkonauExpressions,
+  useArabicNumeralsForCounters,
+} from "./postprocess.js";
 import { lintArticle } from "./linter.js";
 
 export interface GenerateResult {
@@ -45,6 +50,7 @@ export async function runGenerate(
 
   let body = stripLocalImageReferences(finalBody);
   body = simplifyWoOkonauExpressions(body);
+  body = useArabicNumeralsForCounters(body);
   body = appendSourceAttribution(body, digest);
 
   const article: Article = {

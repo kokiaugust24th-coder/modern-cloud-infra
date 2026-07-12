@@ -59,3 +59,29 @@ const WO_OKONAU_CONJUGATIONS: Record<string, string> = {
 export function simplifyWoOkonauExpressions(body: string): string {
   return body.replace(WO_OKONAU_PATTERN, (_match, noun: string, conjugation: string) => `${noun}${WO_OKONAU_CONJUGATIONS[conjugation]}`);
 }
+
+const KANJI_COUNTER_PATTERN = /([一二三四五六七八九])つ/g;
+
+const KANJI_DIGITS: Record<string, string> = {
+  一: "1",
+  二: "2",
+  三: "3",
+  四: "4",
+  五: "5",
+  六: "6",
+  七: "7",
+  八: "8",
+  九: "9",
+};
+
+/**
+ * Converts the generic kanji "counter + つ" quantity idiom (一つ, 二つ, ...)
+ * to arabic digits (1つ, 2つ, ...). Scoped narrowly to this single-kanji +
+ * "つ" pattern — which is unambiguously a countable quantity in Japanese,
+ * unlike other kanji-numeral idioms (一石二鳥 etc.) that must keep the kanji
+ * form — so the replacement is always safe, unlike style-guide prompting
+ * which the LLM has twice failed to follow for this exact rule.
+ */
+export function useArabicNumeralsForCounters(body: string): string {
+  return body.replace(KANJI_COUNTER_PATTERN, (_match, digit: string) => `${KANJI_DIGITS[digit]}つ`);
+}

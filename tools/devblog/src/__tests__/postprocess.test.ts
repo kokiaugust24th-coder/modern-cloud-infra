@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { simplifyWoOkonauExpressions, stripLocalImageReferences } from "../generate/postprocess.js";
+import { simplifyWoOkonauExpressions, stripLocalImageReferences, useArabicNumeralsForCounters } from "../generate/postprocess.js";
 
 describe("simplifyWoOkonauExpressions", () => {
   it("collapses common conjugations of the redundant '〜を行う' pattern", () => {
@@ -19,6 +19,24 @@ describe("simplifyWoOkonauExpressions", () => {
   it("replaces every occurrence in a multi-sentence body", () => {
     const body = "まず設計を行う。次に改善を行った。最後に確認を行います。";
     expect(simplifyWoOkonauExpressions(body)).toBe("まず設計する。次に改善した。最後に確認します。");
+  });
+});
+
+describe("useArabicNumeralsForCounters", () => {
+  it("converts kanji counter digits (一つ〜九つ) to arabic digits", () => {
+    expect(useArabicNumeralsForCounters("一つ")).toBe("1つ");
+    expect(useArabicNumeralsForCounters("二つ")).toBe("2つ");
+    expect(useArabicNumeralsForCounters("九つ")).toBe("9つ");
+  });
+
+  it("replaces every occurrence in a sentence", () => {
+    const body = "理由は一つではなく、大きく二つある。";
+    expect(useArabicNumeralsForCounters(body)).toBe("理由は1つではなく、大きく2つある。");
+  });
+
+  it("leaves unrelated kanji numerals untouched", () => {
+    const text = "一石二鳥という言葉がある。";
+    expect(useArabicNumeralsForCounters(text)).toBe(text);
   });
 });
 
