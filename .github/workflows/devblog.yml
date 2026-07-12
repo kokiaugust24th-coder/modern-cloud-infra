@@ -45,7 +45,29 @@ jobs:
           ARGS=""
           if [ -n "${{ github.event.inputs.since }}" ]; then ARGS="$ARGS --since ${{ github.event.inputs.since }}"; fi
           if [ -n "${{ github.event.inputs.until }}" ]; then ARGS="$ARGS --until ${{ github.event.inputs.until }}"; fi
-          npx tsx src/cli.ts run $ARGS
+
+          # Exit code 3 means the article linter rejected this generation
+          # (e.g. a sentence exceeded the length limit) — regenerating
+          # produces different prose, so retrying is worthwhile. Any other
+          # exit code (missing secret, auth failure, etc.) is a config/code
+          # problem that won't be fixed by retrying, so fail immediately.
+          MAX_ATTEMPTS=3
+          for attempt in $(seq 1 "$MAX_ATTEMPTS"); do
+            echo "::group::devblog run attempt $attempt/$MAX_ATTEMPTS"
+            if npx tsx src/cli.ts run $ARGS; then
+              echo "::endgroup::"
+              exit 0
+            fi
+            status=$?
+            echo "::endgroup::"
+            if [ "$status" -ne 3 ]; then
+              echo "Non-retryable exit code $status; not retrying."
+              exit "$status"
+            fi
+            echo "記事リンター不合格のため再試行します ($attempt/$MAX_ATTEMPTS)"
+          done
+          echo "記事リンターが $MAX_ATTEMPTS 回連続で不合格でした。"
+          exit 3
 
       - name: Upload digest/draft/scan artifacts (for debugging)
         if: always()
