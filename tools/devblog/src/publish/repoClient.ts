@@ -85,7 +85,12 @@ export class GhPublishRepoClient implements PublishRepoClient {
 
       execFileSync("git", ["add", "."], { cwd: workDir, encoding: "utf-8" });
       execFileSync("git", ["commit", "-m", params.commitMessage], { cwd: workDir, encoding: "utf-8" });
-      execFileSync("git", ["push", "-u", "origin", params.branch], { cwd: workDir, encoding: "utf-8" });
+      // devblog/* branches are exclusively machine-generated, and duplicate
+      // detection has already confirmed no OPEN PR uses this branch — so a
+      // pre-existing remote branch can only be a leftover from a closed PR
+      // (closing a PR does not delete its branch). Overwriting it is safe
+      // and required: a plain push is rejected as non-fast-forward.
+      execFileSync("git", ["push", "-u", "--force", "origin", params.branch], { cwd: workDir, encoding: "utf-8" });
 
       const prUrl = execFileSync(
         "gh",

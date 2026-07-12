@@ -71,5 +71,10 @@ describe("GhPublishRepoClient.createPullRequest", () => {
     const decoded = Buffer.from(headerValue.replace("AUTHORIZATION: basic ", ""), "base64").toString("utf-8");
     expect(decoded).toBe("x-access-token:test-token");
     expect(pushIndex).toBeGreaterThan(extraheaderIndex);
+
+    // Must force-push: a leftover branch from a closed PR would otherwise
+    // reject the push as non-fast-forward (duplicate detection has already
+    // guaranteed no open PR uses this machine-owned branch).
+    expect(calls[pushIndex][1]).toContain("--force");
   });
 });
