@@ -1,0 +1,33 @@
+{
+  "targetRepoRoot": "..",
+  "openspecChangesDir": "../openspec/changes",
+  "devlogDir": "../devlog",
+  "digestDir": ".devblog/digests",
+  "draftsDir": ".devblog/drafts",
+  "ledgerPath": ".devblog/published.jsonl",
+  "allowlistPath": "scan-allowlist.json",
+  "defaultPeriodDays": 7,
+  "excludePathPatterns": [
+    "\\.env(\\..*)?$",
+    "(^|/)secrets/",
+    "(^|/)\\.claude/settings\\.local\\.json$",
+    "\\.pem$",
+    "\\.key$"
+  ],
+  "publishRepoEnvVar": "DEVBLOG_PUBLISH_REPO",
+  "publishRepoTokenEnvVar": "DEVBLOG_PUBLISH_REPO_TOKEN",
+  "llm": {
+    "provider": "openai-compatible",
+    "model": "glm-5.2",
+    "baseUrl": "https://api.z.ai/api/paas/v4",
+    "apiKeyEnvVar": "DEVBLOG_LLM_API_KEY",
+    "maxRetries": 3,
+    "baseBackoffMs": 1000,
+    "timeoutMs": 60000
+  },
+  "linter": {
+    "minBodyChars": 800,
+    "maxBodyChars": 6000,
+    "requiredFrontmatter": ["title", "emoji", "type", "topics", "published", "source_period", "source_commits", "template_version", "rubric_version"]
+  }
+}
