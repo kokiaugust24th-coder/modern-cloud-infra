@@ -1,0 +1,35 @@
+# 公開用リポジトリに配置するワークフロー(.github/workflows/record-publish.yml としてコピーする)
+#
+# devblog パイプラインが作成した PR がマージされたら、公開履歴台帳(published.jsonl)に
+# 追記する。ブランチ名の規約(devblog/<since>--<until>)から対象期間を復元する。
+name: Record devblog publication
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  record:
+    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'devblog/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Append ledger entry
+        run: node scripts/record-publish.mjs
+        env:
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          PR_MERGED_AT: ${{ github.event.pull_request.merged_at }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+
+      - name: Commit ledger
+        run: |
+          git config user.name "devblog-bot"
+          git config user.email "devblog-bot@users.noreply.github.com"
+          git add published.jsonl
+          git diff --cached --quiet || git commit -m "chore: record devblog publication (#${{ github.event.pull_request.number }})"
+          git push

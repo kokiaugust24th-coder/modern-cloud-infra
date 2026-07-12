@@ -1,0 +1,30 @@
+# 公開用リポジトリに配置するワークフロー(.github/workflows/stale-pr-close.yml としてコピーする)
+#
+# devblog パイプラインが作成した PR のうち、30日間レビューされていないものを自動クローズする。
+# 自動マージは一切行わない(常に人間のマージ操作でのみ公開される)。クローズされるだけなので
+# 何も公開されないままになるだけで、データが失われるわけではない。
+name: Close stale devblog PRs
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: actions/stale@v9
+        with:
+          only-labels: ""
+          days-before-pr-stale: 30
+          days-before-pr-close: 0
+          stale-pr-message: >
+            この devblog 下書き PR は30日間レビューされていないため自動クローズされます。
+            公開したい場合は再度パイプラインを実行してください(自動マージは行いません)。
+          close-pr-message: "自動クローズしました。"
+          exempt-pr-labels: "keep-open"
+          days-before-issue-stale: -1
+          days-before-issue-close: -1
