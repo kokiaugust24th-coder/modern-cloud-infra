@@ -46,3 +46,14 @@ jobs:
           if [ -n "${{ github.event.inputs.since }}" ]; then ARGS="$ARGS --since ${{ github.event.inputs.since }}"; fi
           if [ -n "${{ github.event.inputs.until }}" ]; then ARGS="$ARGS --until ${{ github.event.inputs.until }}"; fi
           npx tsx src/cli.ts run $ARGS
+
+      - name: Upload digest/draft/scan artifacts (for debugging)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: devblog-run-${{ github.run_id }}
+          path: |
+            tools/devblog/.devblog/digests/
+            tools/devblog/.devblog/drafts/
+          retention-days: 14
+          if-no-files-found: ignore

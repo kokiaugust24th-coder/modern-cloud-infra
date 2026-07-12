@@ -153,7 +153,10 @@ program
       return;
     }
     if (!generateResult.lint?.passed) {
-      console.error("記事リンターに不合格のため公開フローを中断します。");
+      console.error(`記事リンターに不合格のため公開フローを中断します(下書き: ${generateResult.draftPath}):`);
+      for (const issue of generateResult.lint?.issues ?? []) {
+        console.error(`  [${issue.rule}] ${issue.message}${issue.line ? ` (line ${issue.line})` : ""}`);
+      }
       process.exitCode = 3;
       return;
     }
