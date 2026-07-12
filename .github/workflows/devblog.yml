@@ -20,6 +20,12 @@ jobs:
         working-directory: tools/devblog
     steps:
       - uses: actions/checkout@v4
+        with:
+          # actions/checkout defaults to a shallow (depth-1) clone, which
+          # only contains the single commit that triggered the run. `devblog
+          # collect` needs the full commit history to build an accurate
+          # weekly digest via `git log --since/--until`.
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
