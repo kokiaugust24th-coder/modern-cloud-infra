@@ -27,8 +27,20 @@ export class ZennAdapter implements PublishAdapter {
     };
 
     const content = matter.stringify(body, frontmatter);
-    return { relativePath: `articles/${article.slug}.md`, content };
+    return { relativePath: `articles/${toZennSlug(article.slug)}.md`, content };
   }
+}
+
+/**
+ * Zenn requires the filename (= slug) to be 12–50 chars of [a-z0-9-_].
+ * The pipeline's internal slug contains uppercase letters (ISO timestamp
+ * "T"/"Z"), which Zenn rejects at deploy time — found when the first merged
+ * article failed to deploy. Adapter-specific naming rules belong here.
+ */
+function toZennSlug(slug: string): string {
+  let sanitized = slug.toLowerCase().replace(/[^a-z0-9_-]/g, "-");
+  if (sanitized.length < 12) sanitized = `${sanitized}-devblog-post`;
+  return sanitized.slice(0, 50);
 }
 
 function normalizeTopics(topics: string[]): string[] {

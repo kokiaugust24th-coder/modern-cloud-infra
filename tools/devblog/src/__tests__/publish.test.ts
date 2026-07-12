@@ -171,6 +171,26 @@ describe("runPublish", () => {
 });
 
 describe("ZennAdapter", () => {
+  it("sanitizes the slug to Zenn's filename rules (lowercase a-z0-9, -, _, 12-50 chars)", () => {
+    const article = makeArticle();
+    article.slug = "digest-2026-07-11T15-00-00-000Z"; // uppercase T/Z rejected by Zenn deploy
+
+    const converted = new ZennAdapter().convertArticle(article, makeDigest());
+
+    expect(converted.relativePath).toBe("articles/digest-2026-07-11t15-00-00-000z.md");
+    const slug = converted.relativePath.replace("articles/", "").replace(".md", "");
+    expect(slug).toMatch(/^[a-z0-9_-]{12,50}$/);
+  });
+
+  it("pads a too-short slug up to Zenn's 12-character minimum", () => {
+    const article = makeArticle();
+    article.slug = "abc";
+
+    const converted = new ZennAdapter().convertArticle(article, makeDigest());
+    const slug = converted.relativePath.replace("articles/", "").replace(".md", "");
+    expect(slug).toMatch(/^[a-z0-9_-]{12,50}$/);
+  });
+
   it("converts tweet and youtube URLs to Zenn embed syntax", () => {
     const article = makeArticle(
       [
