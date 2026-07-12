@@ -57,15 +57,22 @@ jobs:
           # produces different prose, so retrying is worthwhile. Any other
           # exit code (missing secret, auth failure, etc.) is a config/code
           # problem that won't be fixed by retrying, so fail immediately.
-          # NOTE: `status=$?` must be the line immediately after the command
-          # whose exit code we want — any command in between (even `echo`)
-          # overwrites `$?`, which previously caused this to always see 0
-          # and silently report success without ever creating a PR.
+          # NOTE: GitHub Actions runs `run:` steps as `bash -e {0}` (errexit
+          # ON), so a plain non-zero command aborts the whole step before
+          # `status=$?` even executes — the `set +e`/`set -e` bracketing
+          # below is required, not optional. (Also: `status=$?` must be the
+          # line immediately after the command whose exit code we want — any
+          # command in between, even `echo`, overwrites `$?`.) Both of these
+          # bit us in earlier versions of this script, which silently
+          # reported success, or aborted after attempt 1, without ever
+          # actually retrying.
           MAX_ATTEMPTS=3
           for attempt in $(seq 1 "$MAX_ATTEMPTS"); do
             echo "::group::devblog run attempt $attempt/$MAX_ATTEMPTS"
+            set +e
             npx tsx src/cli.ts run $ARGS
             status=$?
+            set -e
             echo "::endgroup::"
             if [ "$status" -eq 0 ]; then
               exit 0
