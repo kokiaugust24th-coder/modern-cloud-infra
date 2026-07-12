@@ -61,6 +61,21 @@ export function simplifyWoOkonauExpressions(body: string): string {
 }
 
 /**
+ * Removes repair-prompt scaffolding the model may echo back. The repair
+ * prompt frames its input as "## リンターの指摘\n…\n## 本文\n<body>", and a
+ * real run leaked that frame verbatim into a published draft — so any output
+ * that starts with the issue-list heading is deterministically unwrapped.
+ */
+export function stripRepairEcho(text: string): string {
+  const trimmed = text.trimStart();
+  if (!trimmed.startsWith("## リンターの指摘")) return text;
+  const marker = /\n##\s*本文\s*\n/;
+  const match = marker.exec(trimmed);
+  if (!match) return text;
+  return trimmed.slice(match.index + match[0].length);
+}
+
+/**
  * Removes the machine-generated attribution/license footer if present.
  * Used by the lint-guided repair pass: the model sees the full body (so lint
  * line numbers line up) and may echo the footer back, but the footer must

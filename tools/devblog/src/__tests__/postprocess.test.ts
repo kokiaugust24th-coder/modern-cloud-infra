@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { simplifyWoOkonauExpressions, stripLocalImageReferences, useArabicNumeralsForCounters } from "../generate/postprocess.js";
+import {
+  simplifyWoOkonauExpressions,
+  stripLocalImageReferences,
+  stripRepairEcho,
+  useArabicNumeralsForCounters,
+} from "../generate/postprocess.js";
 
 describe("simplifyWoOkonauExpressions", () => {
   it("collapses common conjugations of the redundant '〜を行う' pattern", () => {
@@ -37,6 +42,18 @@ describe("useArabicNumeralsForCounters", () => {
   it("leaves unrelated kanji numerals untouched", () => {
     const text = "一石二鳥という言葉がある。";
     expect(useArabicNumeralsForCounters(text)).toBe(text);
+  });
+});
+
+describe("stripRepairEcho", () => {
+  it("unwraps a body that echoes the repair-prompt scaffolding", () => {
+    const echoed = ["## リンターの指摘", "- [body-length] 本文が短すぎます", "", "## 本文", "## 実際の見出し", "", "本文です。"].join("\n");
+    expect(stripRepairEcho(echoed)).toBe(["## 実際の見出し", "", "本文です。"].join("\n"));
+  });
+
+  it("leaves a normal body untouched, even one containing 情報源 or 本文 in prose", () => {
+    const body = "## 見出し\n\n本文と情報源の話をします。";
+    expect(stripRepairEcho(body)).toBe(body);
   });
 });
 

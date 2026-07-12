@@ -9,6 +9,7 @@ import { runStages } from "./stages.js";
 import {
   appendSourceAttribution,
   stripLocalImageReferences,
+  stripRepairEcho,
   stripSourceAttribution,
   simplifyWoOkonauExpressions,
   useArabicNumeralsForCounters,
@@ -98,9 +99,9 @@ export async function runGenerate(
     repair.passes = pass;
     metadata.stages.repair = repair;
 
-    // Strip the machine-generated footer if the model echoed it back, then
-    // re-apply the deterministic postprocessing to the repaired prose.
-    bodyCore = postprocessCore(stripSourceAttribution(result.text));
+    // Strip any echoed repair-prompt scaffolding and the machine-generated
+    // footer, then re-apply the deterministic postprocessing to the prose.
+    bodyCore = postprocessCore(stripSourceAttribution(stripRepairEcho(result.text)));
     article = composeArticle(bodyCore);
     lint = await lintArticle(article, config.linter);
   }

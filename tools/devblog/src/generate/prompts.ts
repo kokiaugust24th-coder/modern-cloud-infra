@@ -162,6 +162,7 @@ export function buildRepairPrompt(body: string, issues: LintIssue[]): { system: 
     "- 違反箇所以外の文章・見出し・mermaidブロック・リンクは一切変更しないこと",
     "- 新しい事実・数値・実装を追加しないこと",
     "- 出力は修正後の本文(Markdown)のみとし、説明文・前置きを含めないこと",
+    "- 「## リンターの指摘」「## 本文」という見出しは入力の枠組みであり、出力に絶対に含めないこと",
   ].join("\n");
 
   const issueLines = issues

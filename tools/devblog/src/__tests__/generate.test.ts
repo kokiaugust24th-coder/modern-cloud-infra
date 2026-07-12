@@ -177,11 +177,14 @@ describe("runGenerate", () => {
     const config = makeConfig(root);
     // One 100+ character sentence — trips textlint's sentence-length rule.
     const LINT_FAILING_DRAFT = ["## 機能Xの追加", "", `${"この機能はとても長い説明で、".repeat(12)}終わります。`].join("\n");
+    // The repair response echoes the repair-prompt scaffolding, as observed
+    // in a real run that leaked "## リンターの指摘" into a published draft.
+    const ECHOED_REPAIR = ["## リンターの指摘", "- [textlint:sentence-length] 長すぎます", "", "## 本文", VALID_DRAFT].join("\n");
     const llm = new ScriptedLlmClient([
       textResult(VALID_OUTLINE),
       textResult(LINT_FAILING_DRAFT), // draft
       textResult(LINT_FAILING_DRAFT), // critique still bad
-      textResult(VALID_DRAFT), // repair pass 1 fixes it
+      textResult(ECHOED_REPAIR), // repair pass 1 fixes it (with echoed scaffolding)
     ]);
 
     const result = await runGenerate(config, makeDigest(), llm);
@@ -189,9 +192,11 @@ describe("runGenerate", () => {
     expect(result.lint?.passed).toBe(true);
     expect(llm.calls).toBe(4); // outline + draft + critique + 1 repair
     expect(result.metadata?.stages.repair?.passes).toBe(1);
+    const article = result.article as Article;
+    // Echoed scaffolding must be stripped from the final body.
+    expect(article.body).not.toContain("リンターの指摘");
     // The machine-generated attribution footer survives the repair round-trip
     // exactly once (not duplicated, not dropped).
-    const article = result.article as Article;
     expect(article.body.match(/## 情報源/g)).toHaveLength(1);
   });
 
