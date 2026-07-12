@@ -34,3 +34,28 @@ function formatCommitRange(digest: Digest): string | null {
 export function stripLocalImageReferences(body: string): string {
   return body.replace(IMAGE_REF_PATTERN, (match) => `<!-- 画像参照は自動生成では許可されないため削除されました: ${match} -->`);
 }
+
+const WO_OKONAU_PATTERN =
+  /([一-龠ァ-ヶー_A-Za-z0-9]{1,12})を(行う|行った|行って|行っている|行っていた|行います|行いました|行わない)/g;
+
+const WO_OKONAU_CONJUGATIONS: Record<string, string> = {
+  行う: "する",
+  行った: "した",
+  行って: "して",
+  行っている: "している",
+  行っていた: "していた",
+  行います: "します",
+  行いました: "しました",
+  行わない: "しない",
+};
+
+/**
+ * Mechanically collapses the "〜を行う" redundant-expression pattern that
+ * the LLM keeps reproducing despite style-guide instructions (e.g. "改善を
+ * 行う" -> "改善する"). This mirrors the textlint ja-no-redundant-expression
+ * rule so the article linter's decision is reached deterministically rather
+ * than by hoping the model remembered the style guide (design.md D6).
+ */
+export function simplifyWoOkonauExpressions(body: string): string {
+  return body.replace(WO_OKONAU_PATTERN, (_match, noun: string, conjugation: string) => `${noun}${WO_OKONAU_CONJUGATIONS[conjugation]}`);
+}
