@@ -53,9 +53,15 @@ export async function runGenerate(
   body = useArabicNumeralsForCounters(body);
   body = appendSourceAttribution(body, digest);
 
+  // The title comes straight from the LLM's outline-stage JSON and never
+  // passes through the critique stage, so it needs the same deterministic
+  // cleanup as the body — otherwise a redundant expression in the title
+  // alone fails the linter (found via a real run: title contained "生成を行う").
+  const title = useArabicNumeralsForCounters(simplifyWoOkonauExpressions(outline.title));
+
   const article: Article = {
     frontmatter: {
-      title: outline.title,
+      title,
       emoji: "📝",
       type: "tech",
       topics: buildTopics(digest),
