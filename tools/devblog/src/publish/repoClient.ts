@@ -58,6 +58,11 @@ export class GhPublishRepoClient implements PublishRepoClient {
     const workDir = mkdtempSync(path.join(tmpdir(), "devblog-publish-"));
     try {
       execFileSync("gh", ["repo", "clone", this.options.repo, workDir], { encoding: "utf-8", env: this.env() });
+      // CI runners carry no global git identity, so `git commit` fails without
+      // this. Scoped to the ephemeral clone (no --global) rather than mutating
+      // the caller's environment.
+      execFileSync("git", ["config", "user.name", "devblog-bot"], { cwd: workDir, encoding: "utf-8" });
+      execFileSync("git", ["config", "user.email", "devblog-bot@users.noreply.github.com"], { cwd: workDir, encoding: "utf-8" });
       execFileSync("git", ["checkout", "-b", params.branch], { cwd: workDir, encoding: "utf-8" });
 
       for (const file of params.files) {
